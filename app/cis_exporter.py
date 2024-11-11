@@ -8,8 +8,10 @@ __author__ = "Worldline DevOps Team"
 
 valid_severities = ["INFO", "WARN", "PASS", "NOTE"]
 valid_times = ["second", "minute", "hour"]
+metric_labels = ['id', 'desc', 'result', 'details']
 
-parser = argparse.ArgumentParser(description="CIS Metric Exporter Usage Guide", formatter_class=argparse.RawTextHelpFormatter)
+parser = argparse.ArgumentParser(description="CIS Metric Exporter Usage Guide",
+                    formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-f", "--json_file", required=True)
 parser.add_argument("-t", "--refresh_time",
                     required=True,
@@ -26,7 +28,14 @@ parser.add_argument("--severity", choices=valid_severities, nargs='*',
                          "--severity INFO PASS")
 parser.add_argument("--enable_default_collectors", action="store_true",
                     help="Activates the base system metrics")
+parser.add_argument("--filter_fields", choices=metric_labels, nargs='*',
+                    help="Filter labels on chosed fields to display:\n"
+                        "--filter_fields id desc\n"
+                        "--filter_fields id desc results")
 args = parser.parse_args()
+
+if args.filter_fields is not None and len(args.filter_fields) == 0:
+    parser.error("--filter_fields cannot be set empty. Check with --help to see possible fields!")
 
 # Disables default collector metrics if it is not enabled
 if not args.enable_default_collectors:
@@ -35,12 +44,15 @@ if not args.enable_default_collectors:
     prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
 # Create metrics from parsed json objects
-metric_results = prometheus_client.Gauge('cis_benchmark_result', 'CIS Benchmark Metrics', ['id', 'desc', 'result', 'details'])
+metric_results = prometheus_client.Gauge(
+    'cis_benchmark_result',
+    'CIS Benchmark Metrics',
+    args.filter_fields if args.filter_fields else metric_labels
+)
 
 def get_metrics():
     """
     Parses object from CIS output to store them in the Prometheus Gauge
-    :metric_output: single variable as a tuple type that stores json objets
     :_metrics.clear: resets the metrics data to be sure it is always up-to-dated
     :mdata['tests']: main object of CIS json log structure
     """
@@ -57,12 +69,18 @@ def get_metrics():
 
     for metrics in mdata['tests']:
         for output in metrics['results']:
-            if "details" in output and output["details"]:
-                details = output['details']
-            else:
-                details = "None"
+            details = output.get("details", "None")
 
-            metric_output = (output['id'], output['desc'], output['result'], details)
+            if args.filter_fields:
+                metric_output = []
+                for field in args.filter_fields:
+                    if field in output:
+                        metric_output.append(output[field]) # add only defined label(s) in args.filter_fields
+                    elif field == "details":
+                        metric_output.append(details) # add details label if it is defined in args.filter_fields
+            else:
+                # displays all fields as it is if args.filter_fields is not defined
+                 metric_output = (output['id'], output['desc'], output['result'], details)
 
             if args.severity:
                 if any(severity in output['result'] for severity in args.severity):

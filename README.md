@@ -9,8 +9,8 @@ This exporter reads the Docker CIS Benchmark results as a JSON file and then gen
 ## Usage
 
 ```sh
-usage: cis_exporter.py [-h] -f JSON_FILE -t REFRESH_TIME --timebase {second,minute,hour} [-P PORT] [--severity {INFO,WARN,PASS,NOTE}]
-                       [--enable_default_collectors]
+usage: cis_exporter.py [-h] -f JSON_FILE -t REFRESH_TIME --timebase {second,minute,hour} [-P PORT] [--severity [{INFO,WARN,PASS,NOTE} ...]] [--enable_default_collectors]
+                       [--filter_fields [{id,desc,result,details} ...]]
 
 CIS Metric Exporter Usage Guide
 
@@ -22,12 +22,16 @@ options:
   --timebase {second,minute,hour}
                         Valid times are secondly, minutely, and hourly
   -P PORT, --port PORT  Default listening port is 9091
-  --severity {INFO,WARN,PASS,NOTE}
+  --severity [{INFO,WARN,PASS,NOTE} ...]
                         Filters metrics by single or multi severity:
                         --severity WARN
                         --severity INFO PASS
   --enable_default_collectors
                         Activates the base system metrics
+  --filter_fields [{id,desc,result,details} ...]
+                        Filter labels on chosed fields to display:
+                        --filter_fields id desc
+                        --filter_fields id desc results
 ```
 
 #### Runtime Settings: Docker
@@ -37,7 +41,7 @@ Starts exporter with a 5 seconds refreshing time over sample data to use for `de
 ```sh
 $ git clone https://github.com/worldline-go/cis-exporter.git
 $ cd cis-exporter/
-$ docker build -t cis_exporter:test .
+$ docker build -t cis_exporter:latest .
 $ docker run -p 9091:9091 cis_exporter:test -f sample/data.json --timebase second -t 5
 ```
 
@@ -93,23 +97,19 @@ CIS Exporter is started on 9091 port. Refresh time: 5 second(s)
 ```yaml
 services:
   cis_exporter:
-    image: <registry-url>/cis_exporter:3.12-alpine3.18-v1.3.2
+    image: cis_exporter:latest
     volumes: # sync .json log file of cis benchmark from host into the container once it is changed.
       - type: bind
         source: /home/svc_runner/cis-benchmark
         target: /usr/src/app/cis_log
     ports:
       - "9101:9091"
-    command: "-f cis_log/docker-bench-security.log.json --timebase hour -t 3 --severity WARN"
+    command: "-f cis_log/docker-bench-security.log.json --timebase hour -t 3 --severity WARN --filter_fields id desc results"
     deploy:
       mode: global
     networks:
       - prom_exporter
 ```
-
-### Author: Finops DevOps
-
-Please share your feedback with us. Thank you!
 
 ### Referance
 Py Library: https://github.com/prometheus/client_python
