@@ -42,7 +42,7 @@ Starts exporter with a 5 seconds refreshing time over sample data to use for `de
 $ git clone https://github.com/worldline-go/cis-exporter.git
 $ cd cis-exporter/
 $ docker build -t cis_exporter:latest .
-$ docker run -p 9091:9091 cis_exporter:test -f sample/data.json --timebase second -t 5
+$ docker run -p 9091:9091 cis_exporter:latest -f sample/data.json --timebase second -t 5
 ```
 
 Starts exporter with `real data`:  
@@ -51,7 +51,7 @@ To able to work with real data, you need to run **[docker-bench-security](https:
 
 
 ```sh
-$ docker run --mount type=bind,source=<docker-bench-log-folder>/docker-bench-security.log.json,target=/usr/src/app/cis_log -p 9091:9091 cis_exporter:test -f cis_log/docker-bench-security.log.json --timebase second -t 5
+$ docker run --mount type=bind,source=<docker-bench-log-folder>/docker-bench-security.log.json,target=/usr/src/app/cis_log -p 9091:9091 cis_exporter:latest -f cis_log/docker-bench-security.log.json --timebase second -t 5
 ```
 
 Visit the page to see loaded metrics: __->__  http://localhost:9091/metrics
@@ -64,7 +64,7 @@ Note that, docker mounts target folder into the exporter container as a bidirect
 Opens the image with `empty entrypoint` for  `debugging purposes`.
 
 ```sh
-$ docker run -it -p 9091:9091 --entrypoint="" cis_exporter:test /bin/sh
+$ docker run -it -p 9091:9091 --entrypoint="" cis_exporter:latest /bin/sh
 
 /usr/src/app $ ps
 PID   USER     TIME  COMMAND
