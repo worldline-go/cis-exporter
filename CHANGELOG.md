@@ -1,3 +1,7 @@
+## v1.4.0
+
+**feat:** added `--filter_fields` argument to display only specified field(s)
+
 ## v1.3.2
 
 **fix:** docker HEALTHCHECK is improved to avoid unhealthy status in swarm cluster  
